@@ -356,19 +356,24 @@ export default function ExercisesPage() {
 
   const handleSeedDefaults = async () => {
     setSeeding(true)
-    const existingIds = new Set(exercises.map(e => e.id))
-    const toSeed = DEFAULT_EXERCISES.filter(e => !existingIds.has(e.id))
-    if (toSeed.length === 0) {
-      showToast('All default exercises already exist ✓')
+    try {
+      const existingIds = new Set(exercises.map(e => e.id))
+      const toSeed = DEFAULT_EXERCISES.filter(e => !existingIds.has(e.id))
+      if (toSeed.length === 0) {
+        showToast('All default exercises already exist ✓')
+        return
+      }
+      for (const ex of toSeed) {
+        const { id, ...data } = ex
+        await dbSaveExercise(data, id)
+      }
+      showToast(`Seeded ${toSeed.length} default exercises ✓`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      showToast(`Seed failed: ${msg}`)
+    } finally {
       setSeeding(false)
-      return
     }
-    for (const ex of toSeed) {
-      const { id, ...data } = ex
-      await dbSaveExercise(data, id)
-    }
-    setSeeding(false)
-    showToast(`Seeded ${toSeed.length} default exercises ✓`)
   }
 
   return (
