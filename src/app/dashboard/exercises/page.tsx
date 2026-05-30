@@ -4,9 +4,10 @@ import {
   dbWatchExercises, dbSaveExercise, dbDeleteExercise, dbToggleExercisePublished,
   type AdminExercise,
 } from '@/lib/db'
+import { DEFAULT_EXERCISES } from '@/lib/exerciseSeed'
 import {
   Dumbbell, Plus, Pencil, Trash2, Eye, EyeOff,
-  ChevronDown, Search, X, Check,
+  ChevronDown, Search, X, Check, Download,
 } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -322,6 +323,7 @@ export default function ExercisesPage() {
   const [editTarget, setEditTarget] = useState<Partial<AdminExercise> | null | 'new'>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [toast, setToast] = useState('')
+  const [seeding, setSeeding] = useState(false)
 
   useEffect(() => {
     return dbWatchExercises(setExercises)
@@ -352,6 +354,23 @@ export default function ExercisesPage() {
     await dbToggleExercisePublished(ex.id, !ex.isPublished)
   }
 
+  const handleSeedDefaults = async () => {
+    setSeeding(true)
+    const existingIds = new Set(exercises.map(e => e.id))
+    const toSeed = DEFAULT_EXERCISES.filter(e => !existingIds.has(e.id))
+    if (toSeed.length === 0) {
+      showToast('All default exercises already exist ✓')
+      setSeeding(false)
+      return
+    }
+    for (const ex of toSeed) {
+      const { id, ...data } = ex
+      await dbSaveExercise(data, id)
+    }
+    setSeeding(false)
+    showToast(`Seeded ${toSeed.length} default exercises ✓`)
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Toast */}
@@ -380,12 +399,26 @@ export default function ExercisesPage() {
             {exercises.length} exercises · {exercises.filter(e => e.isPublished).length} published
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          {/* Seed default exercises button */}
+          <button
+            onClick={handleSeedDefaults}
+            disabled={seeding}
+            title="Load all 22 hardcoded default exercises into Firestore (skips existing)"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-cyber-muted hover:text-white hover:bg-white/10 font-semibold rounded-xl transition-colors disabled:opacity-50"
+          >
+            {seeding
+              ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <Download size={15} />}
+            {seeding ? 'Seeding…' : 'Seed Defaults'}
+          </button>
         <button
           onClick={() => setEditTarget('new')}
           className="flex items-center gap-2 px-4 py-2.5 bg-cyber-accent text-black font-black rounded-xl hover:bg-cyber-accent/90 transition-colors"
         >
           <Plus size={16} /> Add Exercise
         </button>
+        </div>
       </div>
 
       {/* Filters */}
