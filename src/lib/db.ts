@@ -1,0 +1,287 @@
+import {
+  doc, getDoc, setDoc, collection,
+  query, orderBy, limit, getDocs, addDoc, deleteDoc,
+  onSnapshot, type Unsubscribe,
+} from 'firebase/firestore'
+import { db } from './firebase'
+import type { Plan, AppStats, AppConfig, NotifRecord } from './store'
+
+// ─── Firestore collection paths ──────────────────────────────────────────────
+const CFG  = (name: string) => doc(db, 'admin_config', name)
+const NOTIF = () => collection(db, 'notifications')
+const TEMPLATES = () => collection(db, 'notification_templates')
+const USER_RECORDS = () => collection(db, 'user_records')
+
+// ─── Default values ───────────────────────────────────────────────────────────
+const DEF_FLAGS: Record<string, boolean> = {
+  program_timeline: true, revenue_chart: true, measurements: true,
+  notes: true, broadcast: true, analytics: true,
+  maintenance: false, force_update: false,
+}
+const DEF_PRICES: Record<Plan, number> = { STARTER: 0, PRO: 999, BUSINESS: 2499 }
+const DEF_STATS: AppStats = { totalCoaches: 0, totalClients: 0, totalMrr: 0, totalSessions: 0, activeToday: 0 }
+const DEF_CONFIG: AppConfig = {
+  appVersion: '1.0', buildNumber: '1',
+  packageName: 'com.aistudio.coachops.abxyzm',
+  firebaseProjectId: 'coachops-27a73', firebaseConnected: true,
+}
+
+// ─── Feature Flags ────────────────────────────────────────────────────────────
+export async function dbGetFlags(): Promise<Record<string, boolean>> {
+  const snap = await getDoc(CFG('flags'))
+  return snap.exists() ? (snap.data() as Record<string, boolean>) : DEF_FLAGS
+}
+export async function dbSetFlag(key: string, value: boolean) {
+  const snap = await getDoc(CFG('flags'))
+  const current = snap.exists() ? snap.data() : DEF_FLAGS
+  await setDoc(CFG('flags'), { ...current, [key]: value })
+}
+export function dbWatchFlags(cb: (f: Record<string, boolean>) => void): Unsubscribe {
+  return onSnapshot(CFG('flags'), snap =>
+    cb(snap.exists() ? (snap.data() as Record<string, boolean>) : DEF_FLAGS)
+  )
+}
+
+// ─── Plans & Prices ───────────────────────────────────────────────────────────
+export async function dbGetPlans(): Promise<{ currentPlan: Plan; prices: Record<Plan, number> }> {
+  const snap = await getDoc(CFG('plans'))
+  return snap.exists() ? (snap.data() as any) : { currentPlan: 'STARTER', prices: DEF_PRICES }
+}
+export async function dbSetPlans(data: { currentPlan: Plan; prices: Record<Plan, number> }) {
+  await setDoc(CFG('plans'), data)
+}
+export function dbWatchPlans(cb: (d: { currentPlan: Plan; prices: Record<Plan, number> }) => void): Unsubscribe {
+  return onSnapshot(CFG('plans'), snap =>
+    cb(snap.exists() ? (snap.data() as any) : { currentPlan: 'STARTER', prices: DEF_PRICES })
+  )
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+export async function dbGetStats(): Promise<AppStats> {
+  const snap = await getDoc(CFG('stats'))
+  return snap.exists() ? (snap.data() as AppStats) : DEF_STATS
+}
+export async function dbSetStats(stats: AppStats) {
+  await setDoc(CFG('stats'), { ...stats, lastUpdated: Date.now() })
+}
+export function dbWatchStats(cb: (s: AppStats) => void): Unsubscribe {
+  return onSnapshot(CFG('stats'), snap => cb(snap.exists() ? (snap.data() as AppStats) : DEF_STATS))
+}
+
+// ─── App Config ───────────────────────────────────────────────────────────────
+export async function dbGetConfig(): Promise<AppConfig> {
+  const snap = await getDoc(CFG('app'))
+  return snap.exists() ? (snap.data() as AppConfig) : DEF_CONFIG
+}
+export async function dbSetConfig(config: AppConfig) {
+  await setDoc(CFG('app'), config)
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+export async function dbGetNotifications(): Promise<NotifRecord[]> {
+  const q = query(NOTIF(), orderBy('sentAt', 'desc'), limit(20))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as NotifRecord))
+}
+export async function dbAddNotification(record: Omit<NotifRecord, 'id'>) {
+  await addDoc(NOTIF(), record)
+}
+export function dbWatchNotifications(cb: (n: NotifRecord[]) => void): Unsubscribe {
+  const q = query(NOTIF(), orderBy('sentAt', 'desc'), limit(20))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as NotifRecord)))
+  )
+}
+
+// ─── App Control (maintenance mode, force update, announcement banner) ────────
+
+export interface AppControlConfig {
+  maintenanceMode: boolean
+  maintenanceMessage: string
+  forceUpdate: boolean
+  minVersion: string
+  updateMessage: string
+  announcementEnabled: boolean
+  announcementText: string
+  announcementType: 'info' | 'warning' | 'success'
+}
+
+const DEF_APP_CONTROL: AppControlConfig = {
+  maintenanceMode: false,
+  maintenanceMessage: 'CoachBase is under maintenance. We\'ll be back shortly.',
+  forceUpdate: false,
+  minVersion: '1.0.0',
+  updateMessage: 'A new version of CoachBase is required. Please update from the Play Store.',
+  announcementEnabled: false,
+  announcementText: '',
+  announcementType: 'info',
+}
+
+export async function dbGetAppControl(): Promise<AppControlConfig> {
+  const snap = await getDoc(CFG('app_control'))
+  return snap.exists() ? { ...DEF_APP_CONTROL, ...(snap.data() as AppControlConfig) } : DEF_APP_CONTROL
+}
+export async function dbSetAppControl(config: AppControlConfig) {
+  await setDoc(CFG('app_control'), config)
+}
+export function dbWatchAppControl(cb: (c: AppControlConfig) => void): Unsubscribe {
+  return onSnapshot(CFG('app_control'), snap =>
+    cb(snap.exists() ? { ...DEF_APP_CONTROL, ...(snap.data() as AppControlConfig) } : DEF_APP_CONTROL)
+  )
+}
+
+// ─── Remote Config ────────────────────────────────────────────────────────────
+
+export interface RemoteConfigValues {
+  trialDays: number
+  maxClientsStarter: number
+  maxClientsPro: number
+  maxClientsBusiness: number
+  consistencyRedThreshold: number
+  consistencyYellowThreshold: number
+  checkInAlertDays: number
+  sessionRetentionDays: number
+}
+
+export const DEF_REMOTE_CONFIG: RemoteConfigValues = {
+  trialDays: 14,
+  maxClientsStarter: 10,
+  maxClientsPro: 50,
+  maxClientsBusiness: 200,
+  consistencyRedThreshold: 40,
+  consistencyYellowThreshold: 70,
+  checkInAlertDays: 5,
+  sessionRetentionDays: 90,
+}
+
+export async function dbGetRemoteConfig(): Promise<RemoteConfigValues> {
+  const snap = await getDoc(CFG('remote_config'))
+  return snap.exists() ? { ...DEF_REMOTE_CONFIG, ...(snap.data() as RemoteConfigValues) } : DEF_REMOTE_CONFIG
+}
+export async function dbSetRemoteConfig(config: RemoteConfigValues) {
+  await setDoc(CFG('remote_config'), config)
+}
+export function dbWatchRemoteConfig(cb: (c: RemoteConfigValues) => void): Unsubscribe {
+  return onSnapshot(CFG('remote_config'), snap =>
+    cb(snap.exists() ? { ...DEF_REMOTE_CONFIG, ...(snap.data() as RemoteConfigValues) } : DEF_REMOTE_CONFIG)
+  )
+}
+
+// ─── User Records ─────────────────────────────────────────────────────────────
+
+export interface UserRecord {
+  uid: string
+  email: string
+  displayName: string
+  joinedAt: number
+  lastActiveAt: number
+  plan: string
+  suspended: boolean
+  appVersion: string
+  role: 'coach' | 'client'   // 'coach' if not set (legacy)
+  // Aggregate stats written by the Android app on every data change
+  clientCount?: number
+  totalMrr?: number
+  sessionCount?: number
+}
+
+export async function dbGetUsers(): Promise<UserRecord[]> {
+  const snap = await getDocs(USER_RECORDS())
+  return snap.docs.map(d => d.data() as UserRecord)
+}
+export function dbWatchUsers(cb: (u: UserRecord[]) => void): Unsubscribe {
+  return onSnapshot(USER_RECORDS(), snap =>
+    cb(snap.docs.map(d => d.data() as UserRecord).sort((a, b) => b.joinedAt - a.joinedAt))
+  )
+}
+export async function dbSetUserSuspended(uid: string, suspended: boolean) {
+  await setDoc(doc(db, 'user_records', uid), { suspended }, { merge: true })
+}
+export async function dbSetUserPlan(uid: string, plan: string) {
+  await setDoc(doc(db, 'user_records', uid), { plan }, { merge: true })
+}
+
+// ─── Notification Templates ───────────────────────────────────────────────────
+
+export interface NotifTemplate {
+  id: string
+  title: string
+  body: string
+  createdAt: number
+}
+
+export async function dbSaveTemplate(t: Omit<NotifTemplate, 'id'>) {
+  await addDoc(TEMPLATES(), t)
+}
+export async function dbDeleteTemplate(id: string) {
+  await deleteDoc(doc(db, 'notification_templates', id))
+}
+export function dbWatchTemplates(cb: (t: NotifTemplate[]) => void): Unsubscribe {
+  const q = query(TEMPLATES(), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as NotifTemplate)))
+  )
+}
+
+// ─── Exercise Library (admin CRUD) ───────────────────────────────────────────
+
+export interface AdminExercise {
+  id: string
+  name: string
+  sanskritName: string
+  category: string        // STRENGTH | YOGA | CARDIO | HIIT | FLEXIBILITY
+  primaryMuscles: string[]
+  secondaryMuscles: string[]
+  equipment: string
+  difficulty: string      // BEGINNER | INTERMEDIATE | ADVANCED
+  suitableFor: string[]
+  sets: string
+  reps: string
+  tempo: string
+  rest: string
+  howTo: string[]
+  commonErrors: string[]
+  benefits: string[]
+  bodyEffect: string
+  caloriesBurned: string
+  muscleEmoji: string
+  estimatedMinutes: number
+  imageUrl: string
+  isPublished: boolean
+  createdAt: number
+  updatedAt: number
+}
+
+const EXERCISES = () => collection(db, 'exercises')
+
+export async function dbGetExercises(): Promise<AdminExercise[]> {
+  const q = query(EXERCISES(), orderBy('category'), orderBy('name'))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminExercise))
+}
+
+export async function dbSaveExercise(ex: Omit<AdminExercise, 'id' | 'createdAt' | 'updatedAt'>, id?: string): Promise<string> {
+  const now = Date.now()
+  if (id) {
+    await setDoc(doc(db, 'exercises', id), { ...ex, updatedAt: now }, { merge: true })
+    return id
+  } else {
+    const ref = await addDoc(EXERCISES(), { ...ex, createdAt: now, updatedAt: now })
+    return ref.id
+  }
+}
+
+export async function dbDeleteExercise(id: string) {
+  await deleteDoc(doc(db, 'exercises', id))
+}
+
+export async function dbToggleExercisePublished(id: string, published: boolean) {
+  await setDoc(doc(db, 'exercises', id), { isPublished: published, updatedAt: Date.now() }, { merge: true })
+}
+
+export function dbWatchExercises(cb: (list: AdminExercise[]) => void): Unsubscribe {
+  const q = query(EXERCISES(), orderBy('category'), orderBy('name'))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminExercise)))
+  )
+}
