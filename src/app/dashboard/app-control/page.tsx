@@ -5,10 +5,10 @@ import { dbGetAppControl, dbSetAppControl, type AppControlConfig } from '@/lib/d
 
 const DEF: AppControlConfig = {
   maintenanceMode: false,
-  maintenanceMessage: "CoachBase is under maintenance. We'll be back shortly.",
+  maintenanceMessage: "ProCoach India is under maintenance. We'll be back shortly.",
   forceUpdate: false,
   minVersion: '1.0.0',
-  updateMessage: 'A new version of CoachBase is required. Please update from the Play Store.',
+  updateMessage: 'A new version of ProCoach India is required. Please update from the Play Store.',
   announcementEnabled: false,
   announcementText: '',
   announcementType: 'info',

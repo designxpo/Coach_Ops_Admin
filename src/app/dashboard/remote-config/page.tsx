@@ -22,19 +22,19 @@ const FIELDS: ConfigField[] = [
   {
     key: 'maxClientsStarter',
     label: 'Max Clients — Starter',
-    description: 'Client limit for coaches on the Starter plan',
+    description: 'Member limit for coaches on the Starter plan',
     unit: 'clients', min: 1, max: 100,
   },
   {
     key: 'maxClientsPro',
     label: 'Max Clients — Pro',
-    description: 'Client limit for coaches on the Pro plan',
+    description: 'Member limit for coaches on the Pro plan',
     unit: 'clients', min: 1, max: 500,
   },
   {
     key: 'maxClientsBusiness',
     label: 'Max Clients — Business',
-    description: 'Client limit for coaches on the Business plan',
+    description: 'Member limit for coaches on the Business plan',
     unit: 'clients', min: 1, max: 2000,
   },
   {

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Bell, ToggleLeft, CreditCard,
-  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell,
+  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
@@ -13,6 +13,7 @@ const NAV = [
   { href: '/dashboard/app-control',   icon: Sliders,           label: 'App Control'     },
   { href: '/dashboard/users',         icon: Users,             label: 'Users'           },
   { href: '/dashboard/exercises',     icon: Dumbbell,          label: 'Exercises'       },
+  { href: '/dashboard/nutrition',     icon: Utensils,          label: 'Nutrition'       },
   { href: '/dashboard/notifications', icon: Bell,              label: 'Notifications'   },
   { href: '/dashboard/features',      icon: ToggleLeft,        label: 'Feature Flags'   },
   { href: '/dashboard/plans',         icon: CreditCard,        label: 'Plans & Pricing' },
@@ -37,11 +38,11 @@ export default function Sidebar() {
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex-shrink-0 bg-black flex items-center justify-center p-0.5">
-            <img src="/coachbase.svg" alt="CoachBase" className="w-full h-full object-contain" />
+            <img src="/procoachindia.svg" alt="ProCoach India" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="text-sm font-black text-white">
-              Coach<span className="text-[#d7fa00]">Base</span>
+              ProCoach<span className="text-[#d7fa00]"> India</span>
             </div>
             <div className="text-xs text-cyber-muted">Admin Panel</div>
           </div>
@@ -71,7 +72,7 @@ export default function Sidebar() {
           </div>
           <div className="min-w-0">
             <div className="text-xs font-semibold text-white truncate">{email || 'Admin'}</div>
-            <div className="text-xs text-cyber-muted">CoachOps Owner</div>
+            <div className="text-xs text-cyber-muted">ProCoach India Owner</div>
           </div>
         </div>
         <button onClick={logout}

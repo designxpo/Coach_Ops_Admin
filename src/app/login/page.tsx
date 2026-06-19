@@ -51,7 +51,7 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-10 gap-4">
           <div className="bg-black rounded-2xl p-3 flex items-center justify-center">
-            <img src="/coachbase.svg" alt="CoachBase" className="h-16 w-auto object-contain" />
+            <img src="/procoachindia.svg" alt="ProCoach India" className="h-16 w-auto object-contain" />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-black text-white">

@@ -14,7 +14,7 @@ export const FEATURES: Feature[] = [
   { key: 'program_timeline', label: 'Program Timeline',   description: 'Daily session tracking per program', defaultEnabled: true },
   { key: 'revenue_chart',    label: 'Revenue Chart',      description: 'MRR trend visualization',            defaultEnabled: true },
   { key: 'measurements',     label: 'Body Measurements',  description: 'Track weight & body fat %',          defaultEnabled: true },
-  { key: 'notes',            label: 'Client Notes',       description: 'Quick notes per client',             defaultEnabled: true },
+  { key: 'notes',            label: 'Member Notes',       description: 'Quick notes per member',             defaultEnabled: true },
   { key: 'broadcast',        label: 'Broadcast',          description: 'WhatsApp bulk messaging',            defaultEnabled: true },
   { key: 'analytics',        label: 'Analytics',          description: 'Retention & churn insights',         defaultEnabled: true },
   { key: 'maintenance',      label: 'Maintenance Mode',   description: 'Lock app for all users',             defaultEnabled: false, dangerous: true },
@@ -151,7 +151,7 @@ export const getPrices      = () => get<Record<Plan, number>>('prices', DEFAULT_
 export const setPrices      = (p: Record<Plan, number>) => set('prices', p)
 
 // Notifications
-export interface NotifRecord { id: string; title: string; body: string; target: string; sentAt: number }
+export interface NotifRecord { id: string; title: string; body: string; target: string; sentAt: number; delivered?: number; total?: number }
 export const getNotifLog = () => get<NotifRecord[]>('notif_log', [])
 export const addNotifLog = (n: NotifRecord) => {
   const log = [n, ...getNotifLog()].slice(0, 20)

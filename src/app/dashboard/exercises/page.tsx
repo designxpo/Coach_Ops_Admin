@@ -1,13 +1,14 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   dbWatchExercises, dbSaveExercise, dbDeleteExercise, dbToggleExercisePublished,
   type AdminExercise,
 } from '@/lib/db'
 import { DEFAULT_EXERCISES } from '@/lib/exerciseSeed'
+import { uploadExerciseImage } from '@/lib/supabase'
 import {
   Dumbbell, Plus, Pencil, Trash2, Eye, EyeOff,
-  ChevronDown, Search, X, Check, Download,
+  ChevronDown, Search, X, Check, Download, Upload,
 } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -159,10 +160,31 @@ function ExerciseModal({
       isPublished: exercise.isPublished ?? true,
     } : {}),
   })
-  const [saving, setSaving] = useState(false)
+  const [saving,      setSaving]      = useState(false)
+  const [uploading,   setUploading]   = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const set = (key: keyof typeof form, value: unknown) =>
     setForm(f => ({ ...f, [key]: value }))
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError('')
+    setUploading(true)
+    try {
+      // Use exercise name as ID slug, or timestamp as fallback
+      const id = form.name.trim().toLowerCase().replace(/\s+/g, '_') || Date.now().toString()
+      const url = await uploadExerciseImage(file, id)
+      set('imageUrl', url)
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSave = async () => {
     if (!form.name.trim()) return
@@ -267,10 +289,45 @@ function ExerciseModal({
                 value={form.muscleEmoji} onChange={e => set('muscleEmoji', e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs text-cyber-muted mb-1">Image URL (Unsplash etc.)</label>
-              <input className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
-                value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)}
-                placeholder="https://images.unsplash.com/..." />
+              <label className="block text-xs text-cyber-muted mb-1">
+                Exercise Image <span className="opacity-50">(upload or paste URL · max 5 MB)</span>
+              </label>
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white"
+                  value={form.imageUrl}
+                  onChange={e => set('imageUrl', e.target.value)}
+                  placeholder="https://images.unsplash.com/... or upload →"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-cyber-accent/20 hover:bg-cyber-accent/30 text-cyber-accent rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  <Upload size={13} />
+                  {uploading ? 'Uploading…' : 'Upload'}
+                </button>
+              </div>
+              {uploadError && (
+                <p className="text-xs text-red-400 mt-1">{uploadError}</p>
+              )}
+              {form.imageUrl && !uploading && (
+                <img
+                  src={form.imageUrl}
+                  alt="preview"
+                  className="mt-2 h-24 w-full object-cover rounded-lg opacity-80"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+              )}
             </div>
           </div>
 

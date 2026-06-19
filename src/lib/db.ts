@@ -108,10 +108,10 @@ export interface AppControlConfig {
 
 const DEF_APP_CONTROL: AppControlConfig = {
   maintenanceMode: false,
-  maintenanceMessage: 'CoachBase is under maintenance. We\'ll be back shortly.',
+  maintenanceMessage: 'ProCoach India is under maintenance. We\'ll be back shortly.',
   forceUpdate: false,
   minVersion: '1.0.0',
-  updateMessage: 'A new version of CoachBase is required. Please update from the Play Store.',
+  updateMessage: 'A new version of ProCoach India is required. Please update from the Play Store.',
   announcementEnabled: false,
   announcementText: '',
   announcementType: 'info',
@@ -283,5 +283,65 @@ export function dbWatchExercises(cb: (list: AdminExercise[]) => void): Unsubscri
   const q = query(EXERCISES(), orderBy('category'), orderBy('name'))
   return onSnapshot(q, snap =>
     cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminExercise)))
+  )
+}
+
+// ─── Nutrition Plans (admin CRUD) ─────────────────────────────────────────────
+
+export interface AdminFoodItem {
+  name: string
+  quantity: string
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  benefits: string
+  isVegetarian: boolean
+  imageUrl?: string
+}
+
+export interface AdminMeal {
+  name: string
+  timeSlot: string
+  notes: string
+  items: AdminFoodItem[]
+}
+
+export interface AdminNutritionPlan {
+  id: string          // == goal key, e.g. 'BUILD_MUSCLE'
+  goal: string
+  goalLabel: string
+  goalEmoji: string
+  dailyCalories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  hydration: string
+  generalTips: string[]
+  meals: AdminMeal[]
+  isPublished: boolean
+  updatedAt: number
+  headerImageUrl?: string   // large banner shown at top of nutrition screen
+  iconImageUrl?: string     // small circle icon on goal selection screen
+}
+
+const NUTRITION = () => collection(db, 'nutrition_plans')
+
+export async function dbGetNutritionPlans(): Promise<AdminNutritionPlan[]> {
+  const snap = await getDocs(NUTRITION())
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminNutritionPlan))
+}
+
+export async function dbSaveNutritionPlan(plan: Omit<AdminNutritionPlan, 'id' | 'updatedAt'>, id: string): Promise<void> {
+  await setDoc(doc(db, 'nutrition_plans', id), { ...plan, updatedAt: Date.now() }, { merge: true })
+}
+
+export async function dbToggleNutritionPublished(id: string, published: boolean) {
+  await setDoc(doc(db, 'nutrition_plans', id), { isPublished: published, updatedAt: Date.now() }, { merge: true })
+}
+
+export function dbWatchNutritionPlans(cb: (list: AdminNutritionPlan[]) => void): Unsubscribe {
+  return onSnapshot(NUTRITION(), snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminNutritionPlan)))
   )
 }

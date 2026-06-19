@@ -6,9 +6,9 @@ import type { Plan } from '@/lib/store'
 
 const PLANS: { id: Plan; emoji: string; name: string; maxClients: string; color: string; features: string[] }[] = [
   { id: 'STARTER', emoji: '🌱', name: 'Starter',  maxClients: '5 clients',    color: '#6B7280',
-    features: ['Client management', 'Basic session logging'] },
+    features: ['Member management', 'Basic session logging'] },
   { id: 'PRO',     emoji: '⚡', name: 'Pro',      maxClients: '20 clients',   color: '#D4F700',
-    features: ['All Starter features', 'Program timeline', 'Revenue chart', 'Body measurements', 'Client notes'] },
+    features: ['All Starter features', 'Program timeline', 'Revenue chart', 'Body measurements', 'Member notes'] },
   { id: 'BUSINESS',emoji: '🚀', name: 'Business', maxClients: 'Unlimited',    color: '#818CF8',
     features: ['All Pro features', 'Broadcast messaging', 'Advanced analytics', 'Data export'] },
 ]

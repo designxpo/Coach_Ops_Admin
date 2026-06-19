@@ -104,7 +104,7 @@ function CoachesTable({ coaches, onToggle, onChanged }: {
       <table className="w-full">
         <thead>
           <tr className="border-b border-white/5">
-            {['Coach', 'Plan', 'Clients', 'MRR', 'Joined', 'Last Active', ''].map(h => (
+            {['Coach', 'Plan', 'Members', 'MRR', 'Joined', 'Last Active', ''].map(h => (
               <th key={h} className="text-left px-5 py-4 text-xs font-semibold text-cyber-muted uppercase tracking-wider">{h}</th>
             ))}
           </tr>
@@ -160,15 +160,15 @@ function ClientsTable({ clients, onToggle }: {
 }) {
   if (clients.length === 0) return (
     <EmptyState icon={<User className="w-6 h-6 text-cyber-muted" />}
-      title="No clients yet"
-      sub="Client records appear when they sign up and complete onboarding in the app" />
+      title="No members yet"
+      sub="Member records appear when they sign up and complete onboarding in the app" />
   )
   return (
     <div className="bg-cyber-card rounded-2xl border border-white/5 overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="border-b border-white/5">
-            {['Client', 'Goal', 'City', 'Joined', 'Last Active', ''].map(h => (
+            {['Member', 'Goal', 'City', 'Joined', 'Last Active', ''].map(h => (
               <th key={h} className="text-left px-5 py-4 text-xs font-semibold text-cyber-muted uppercase tracking-wider">{h}</th>
             ))}
           </tr>
@@ -260,7 +260,7 @@ export default function UsersPage() {
           <Users className="text-cyber-accent" size={22} /> Users
         </h1>
         <p className="text-sm text-cyber-muted mt-0.5">
-          Registered coaches and clients across CoachBase
+          Registered coaches and members across ProCoach India
         </p>
       </div>
 
@@ -269,7 +269,7 @@ export default function UsersPage() {
         {[
           { label: 'Total Users',   value: users.length,                                  color: 'text-white'         },
           { label: 'Coaches',       value: coaches.length,                                color: 'text-indigo-400'    },
-          { label: 'Clients',       value: clients.length,                                color: 'text-cyber-accent'  },
+          { label: 'Members',       value: clients.length,                                color: 'text-cyber-accent'  },
           { label: 'Suspended',     value: users.filter(u => u.suspended).length,         color: 'text-cyber-danger'  },
         ].map(({ label, value, color }) => (
           <div key={label} className="bg-cyber-card rounded-2xl p-5 border border-white/5">
@@ -283,7 +283,7 @@ export default function UsersPage() {
       <div className="flex gap-2 mb-5">
         {([
           { key: 'coaches', label: `Coaches (${coaches.length})`, icon: Dumbbell },
-          { key: 'clients', label: `Clients (${clients.length})`, icon: User     },
+          { key: 'clients', label: `Members (${clients.length})`, icon: User     },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
             key={key}

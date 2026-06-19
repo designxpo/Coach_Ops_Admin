@@ -141,7 +141,7 @@ export default function OverviewPage() {
           <div className="text-xs font-semibold text-cyber-muted uppercase tracking-wider mb-4">Account</div>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center flex-shrink-0 p-0.5">
-              <img src="/coachbase.svg" alt="CoachBase" className="w-full h-full object-contain" />
+              <img src="/procoachindia.svg" alt="ProCoach India" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="text-sm font-black text-white flex items-center gap-2">
