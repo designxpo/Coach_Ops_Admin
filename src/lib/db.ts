@@ -345,3 +345,27 @@ export function dbWatchNutritionPlans(cb: (list: AdminNutritionPlan[]) => void):
     cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminNutritionPlan)))
   )
 }
+
+// ─── Early Access Sign-ups ────────────────────────────────────────────────────
+
+export interface EarlyAccessRecord {
+  id: string
+  name: string
+  email: string
+  role: 'coach' | 'member'
+  signedUpAt: number
+  source?: string
+}
+
+const EARLY_ACCESS = () => collection(db, 'early_access')
+
+export function dbWatchEarlyAccess(cb: (list: EarlyAccessRecord[]) => void): Unsubscribe {
+  const q = query(EARLY_ACCESS(), orderBy('signedUpAt', 'desc'))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as EarlyAccessRecord)))
+  )
+}
+
+export async function dbDeleteEarlyAccess(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'early_access', id))
+}

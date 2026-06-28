@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Bell, ToggleLeft, CreditCard,
-  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils,
+  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils, Rocket,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
@@ -12,6 +12,7 @@ const NAV = [
   { href: '/dashboard',               icon: LayoutDashboard,   label: 'Overview'        },
   { href: '/dashboard/app-control',   icon: Sliders,           label: 'App Control'     },
   { href: '/dashboard/users',         icon: Users,             label: 'Users'           },
+  { href: '/dashboard/early-access', icon: Rocket,            label: 'Early Access'    },
   { href: '/dashboard/exercises',     icon: Dumbbell,          label: 'Exercises'       },
   { href: '/dashboard/nutrition',     icon: Utensils,          label: 'Nutrition'       },
   { href: '/dashboard/notifications', icon: Bell,              label: 'Notifications'   },
