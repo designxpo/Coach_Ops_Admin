@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Users, TrendingUp, Zap, Activity, AlertCircle, Crown, RefreshCw, Clock } from 'lucide-react'
+import { Users, TrendingUp, Zap, Activity, AlertCircle, Crown, RefreshCw, Clock, Smartphone } from 'lucide-react'
 import { dbWatchUsers, dbGetFlags, dbWatchPlans, type UserRecord } from '@/lib/db'
 import type { Plan } from '@/lib/store'
 
@@ -20,6 +20,19 @@ function formatRevenue(amount: number): string {
   if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`
   if (amount >= 1000)   return `₹${Math.round(amount / 1000)}K`
   return `₹${amount}`
+}
+
+// Semver-ish sort: "1.10.0" > "1.9.0" > "1.0" > "unknown"
+function compareVersions(a: string, b: string): number {
+  if (a === 'unknown') return -1
+  if (b === 'unknown') return 1
+  const pa = a.split('.').map(n => parseInt(n, 10) || 0)
+  const pb = b.split('.').map(n => parseInt(n, 10) || 0)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0)
+    if (d !== 0) return d
+  }
+  return 0
 }
 
 export default function OverviewPage() {
@@ -58,6 +71,19 @@ export default function OverviewPage() {
     (planCounts['BUSINESS'] ?? 0) * prices.BUSINESS
 
   const maintenanceOn = flags['maintenance']
+
+  // ── App version adoption (which build each user is running) ────────────────
+  const versionCounts = users.reduce<Record<string, number>>((acc, u) => {
+    const v = u.appVersion || 'unknown'
+    acc[v] = (acc[v] ?? 0) + 1
+    return acc
+  }, {})
+  const versionsSorted = Object.entries(versionCounts)
+    .sort((a, b) => compareVersions(b[0], a[0]))
+  const latestVersion = versionsSorted.find(([v]) => v !== 'unknown')?.[0]
+  const outdatedCount = latestVersion
+    ? users.filter(u => (u.appVersion || 'unknown') !== latestVersion).length
+    : 0
 
   return (
     <div className="p-8 max-w-5xl">
@@ -207,6 +233,67 @@ export default function OverviewPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* ── App Version Adoption ─────────────────────────────────────────── */}
+      <div className="mt-4 bg-cyber-card rounded-2xl p-6 border border-white/5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-cyber-accent" />
+            <span className="text-xs font-semibold text-cyber-muted uppercase tracking-wider">App Version Adoption</span>
+          </div>
+          {latestVersion && (
+            <span className="text-xs text-cyber-muted">
+              Latest: <span className="text-emerald-400 font-bold">v{latestVersion}</span>
+              {outdatedCount > 0 && (
+                <span className="ml-2 text-amber-400 font-semibold">{outdatedCount} user{outdatedCount === 1 ? '' : 's'} on older builds</span>
+              )}
+            </span>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-16">
+            <div className="w-5 h-5 border-2 border-cyber-purple border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : versionsSorted.length === 0 ? (
+          <div className="text-sm text-cyber-muted py-4 text-center">No version data yet — appears as users open the app</div>
+        ) : (
+          <div className="space-y-2">
+            {versionsSorted.map(([version, count]) => {
+              const pct = users.length > 0 ? Math.round((count / users.length) * 100) : 0
+              const isLatest = version === latestVersion
+              const isUnknown = version === 'unknown'
+              return (
+                <div key={version} className="flex items-center gap-3">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold w-24 text-center font-mono ${
+                    isLatest ? 'bg-emerald-400/20 text-emerald-400'
+                    : isUnknown ? 'bg-white/10 text-cyber-muted'
+                    : 'bg-amber-500/20 text-amber-400'
+                  }`}>
+                    {isUnknown ? 'unknown' : `v${version}`}
+                  </span>
+                  <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${isLatest ? 'bg-emerald-400/70' : isUnknown ? 'bg-white/20' : 'bg-amber-400/70'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-white w-8 text-right">{count}</span>
+                  <span className="text-[10px] text-cyber-muted w-10 text-right">{pct}%</span>
+                  {isLatest && <span className="text-[10px] font-black text-emerald-400 w-12">LATEST</span>}
+                  {!isLatest && !isUnknown && <span className="text-[10px] font-bold text-amber-400/70 w-12">OLD</span>}
+                  {isUnknown && <span className="w-12" />}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <div className="mt-4 text-xs text-cyber-muted bg-white/3 border border-white/5 rounded-xl px-3 py-2">
+          Updates automatically: every app launch reports its build version, and each user&apos;s full
+          upgrade history is kept in <span className="font-mono">versionHistory</span>. Push an update to
+          the Play Store and watch adoption move here in real time.
+        </div>
       </div>
     </div>
   )

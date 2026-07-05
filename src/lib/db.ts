@@ -178,6 +178,9 @@ export interface UserRecord {
   plan: string
   suspended: boolean
   appVersion: string
+  appVersionCode?: number
+  appVersionUpdatedAt?: number
+  versionHistory?: string[]  // every version this user has ever run
   role: 'coach' | 'client'   // 'coach' if not set (legacy)
   // Aggregate stats written by the Android app on every data change
   clientCount?: number
