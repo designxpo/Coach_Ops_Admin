@@ -143,11 +143,13 @@ export interface RemoteConfigValues {
   sessionRetentionDays: number
 }
 
+// Client caps: 0 = unlimited. Must match the app's SubscriptionPlan tiers
+// (Starter 5 · Pro 20 · Business unlimited) — the app now applies these live.
 export const DEF_REMOTE_CONFIG: RemoteConfigValues = {
   trialDays: 14,
-  maxClientsStarter: 10,
-  maxClientsPro: 50,
-  maxClientsBusiness: 200,
+  maxClientsStarter: 5,
+  maxClientsPro: 20,
+  maxClientsBusiness: 0,
   consistencyRedThreshold: 40,
   consistencyYellowThreshold: 70,
   checkInAlertDays: 5,
