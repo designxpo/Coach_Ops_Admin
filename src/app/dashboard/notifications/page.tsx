@@ -8,6 +8,7 @@ import {
   dbSaveTemplate, dbDeleteTemplate,
   type NotifTemplate,
 } from '@/lib/db'
+import { auth } from '@/lib/firebase'
 import type { NotifRecord } from '@/lib/store'
 
 const TARGETS = [
@@ -50,14 +51,19 @@ export default function NotificationsPage() {
     setSending(true)
     setResult(null)
     try {
+      const idToken = await auth.currentUser?.getIdToken()
+      if (!idToken) throw new Error('Not signed in — please log in again')
       const res  = await fetch('/api/send-notification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`,
+        },
         body: JSON.stringify({ title: title.trim(), body: body.trim(), target }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Request failed')
-      setResult({ ok: true, msg: `Delivered to ${data.delivered} of ${data.total} device${data.total !== 1 ? 's' : ''}` })
+      setResult({ ok: true, msg: `Accepted by FCM for ${data.delivered} of ${data.total} device${data.total !== 1 ? 's' : ''}` })
       setTitle('')
       setBody('')
     } catch (e: any) {

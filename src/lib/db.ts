@@ -372,3 +372,41 @@ export function dbWatchEarlyAccess(cb: (list: EarlyAccessRecord[]) => void): Uns
 export async function dbDeleteEarlyAccess(id: string): Promise<void> {
   await deleteDoc(doc(db, 'early_access', id))
 }
+
+// ─── In-app Issue Reports ─────────────────────────────────────────────────────
+
+export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED'
+
+export interface IssueReport {
+  id: string
+  uid: string
+  name: string
+  email: string
+  role: string
+  category: string
+  message: string
+  status: IssueStatus
+  appVersion: string
+  appVersionCode: number
+  device: string
+  androidVersion: string
+  lastCrash: string
+  createdAt: number
+}
+
+const ISSUES = () => collection(db, 'issue_reports')
+
+export function dbWatchIssueReports(cb: (list: IssueReport[]) => void): Unsubscribe {
+  const q = query(ISSUES(), orderBy('createdAt', 'desc'))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as IssueReport)))
+  )
+}
+
+export async function dbSetIssueStatus(id: string, status: IssueStatus): Promise<void> {
+  await setDoc(doc(db, 'issue_reports', id), { status, updatedAt: Date.now() }, { merge: true })
+}
+
+export async function dbDeleteIssueReport(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'issue_reports', id))
+}

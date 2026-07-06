@@ -27,3 +27,27 @@ export function getAdminMessaging() {
 export function getAdminFirestore() {
   return admin.firestore(getAdminApp())
 }
+
+export function getAdminAuth() {
+  return admin.auth(getAdminApp())
+}
+
+/** The one account allowed to call admin APIs — same predicate as firestore.rules isAdmin() */
+export const ADMIN_EMAIL = 'priyeshmishraofficial@gmail.com'
+
+/**
+ * Verifies the Authorization: Bearer <Firebase ID token> header and requires
+ * the admin account. Returns null when authorized, or an error message.
+ * API routes are PUBLIC on Vercel — every admin route must call this first.
+ */
+export async function requireAdmin(authorizationHeader: string | null): Promise<string | null> {
+  const token = authorizationHeader?.startsWith('Bearer ') ? authorizationHeader.slice(7) : null
+  if (!token) return 'Missing Authorization bearer token'
+  try {
+    const decoded = await getAdminAuth().verifyIdToken(token)
+    if (decoded.email !== ADMIN_EMAIL) return 'Not authorized'
+    return null
+  } catch {
+    return 'Invalid or expired token'
+  }
+}
