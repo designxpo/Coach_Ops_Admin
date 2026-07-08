@@ -412,3 +412,55 @@ export async function dbSetIssueStatus(id: string, status: IssueStatus): Promise
 export async function dbDeleteIssueReport(id: string): Promise<void> {
   await deleteDoc(doc(db, 'issue_reports', id))
 }
+
+// ─── Subscription Upgrade Requests ────────────────────────────────────────────
+// The app writes to upgrade_requests when a coach/member asks to upgrade. The
+// admin approves here → we flip the plan on user_records/{uid}, which the app
+// picks up live via its EntitlementManager listener. Closes the loop.
+
+export type UpgradeStatus = 'PENDING' | 'CONTACTED' | 'ACTIVATED' | 'DECLINED'
+
+export interface UpgradeRequest {
+  id: string
+  uid: string
+  email: string
+  name: string
+  phone: string
+  currentPlan: string      // STARTER | PRO | BUSINESS
+  requestedTier: string    // STARTER | PRO | BUSINESS | MEMBER_PREMIUM
+  note: string
+  status: UpgradeStatus
+  requestedAt: number
+}
+
+const UPGRADES = () => collection(db, 'upgrade_requests')
+
+export function dbWatchUpgradeRequests(cb: (list: UpgradeRequest[]) => void): Unsubscribe {
+  const q = query(UPGRADES(), orderBy('requestedAt', 'desc'))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as UpgradeRequest)))
+  )
+}
+
+/**
+ * Approve a request: apply the entitlement to user_records/{uid} (which the app
+ * reads live) and mark the request ACTIVATED.
+ */
+export async function dbApproveUpgrade(req: UpgradeRequest): Promise<void> {
+  const userRef = doc(db, 'user_records', req.uid)
+  if (req.requestedTier === 'MEMBER_PREMIUM') {
+    await setDoc(userRef, { memberPremium: true }, { merge: true })
+  } else {
+    await setDoc(userRef, { plan: req.requestedTier }, { merge: true })
+  }
+  await setDoc(doc(db, 'upgrade_requests', req.id),
+    { status: 'ACTIVATED', activatedAt: Date.now() }, { merge: true })
+}
+
+export async function dbSetUpgradeStatus(id: string, status: UpgradeStatus): Promise<void> {
+  await setDoc(doc(db, 'upgrade_requests', id), { status, updatedAt: Date.now() }, { merge: true })
+}
+
+export async function dbDeleteUpgradeRequest(id: string): Promise<void> {
+  await deleteDoc(doc(db, 'upgrade_requests', id))
+}
