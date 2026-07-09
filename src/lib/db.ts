@@ -205,6 +205,11 @@ export async function dbSetUserSuspended(uid: string, suspended: boolean) {
 export async function dbSetUserPlan(uid: string, plan: string) {
   await setDoc(doc(db, 'user_records', uid), { plan }, { merge: true })
 }
+// Manual role correction — older app builds never wrote `role` for members who
+// signed in via Google on the login screen, so they surfaced here as coaches.
+export async function dbSetUserRole(uid: string, role: 'coach' | 'client') {
+  await setDoc(doc(db, 'user_records', uid), { role }, { merge: true })
+}
 
 // ─── Notification Templates ───────────────────────────────────────────────────
 

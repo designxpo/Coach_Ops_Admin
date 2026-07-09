@@ -54,12 +54,14 @@ export default function OverviewPage() {
   }, [])
 
   // ── Stats from coaches ─────────────────────────────────────────────────────
-  const totalCoaches  = users.length
+  // Members (role 'client') get their own app experience — don't count them as coaches
+  const coachUsers    = users.filter(u => u.role !== 'client')
+  const totalCoaches  = coachUsers.length
   const totalClients  = users.reduce((s, u) => s + (u.clientCount  ?? 0), 0)
   const totalSessions = users.reduce((s, u) => s + (u.sessionCount ?? 0), 0)
   const activeToday   = users.filter(u => u.lastActiveAt && Date.now() - u.lastActiveAt < 86400000).length
 
-  const planCounts = users.reduce<Record<string, number>>((acc, u) => {
+  const planCounts = coachUsers.reduce<Record<string, number>>((acc, u) => {
     const p = u.plan || 'STARTER'
     acc[p] = (acc[p] ?? 0) + 1
     return acc

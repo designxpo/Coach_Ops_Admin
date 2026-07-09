@@ -5,7 +5,7 @@ import {
   ShieldAlert, ShieldCheck, Ban, Smartphone,
 } from 'lucide-react'
 import {
-  dbWatchUsers, dbSetUserSuspended, dbSetUserPlan, type UserRecord,
+  dbWatchUsers, dbSetUserSuspended, dbSetUserPlan, dbSetUserRole, type UserRecord,
 } from '@/lib/db'
 
 const PLAN_OPTIONS = ['STARTER', 'PRO', 'BUSINESS']
@@ -79,6 +79,14 @@ export default function UsersPage() {
   async function changePlan(u: UserRecord, plan: string) {
     setBusy(u.uid)
     try { await dbSetUserPlan(u.uid, plan) }
+    finally { setBusy(null) }
+  }
+
+  async function changeRole(u: UserRecord, role: 'coach' | 'client') {
+    if ((u.role || 'coach') === role) return
+    if (!confirm(`Change ${u.displayName || u.email || 'this user'} to ${role === 'coach' ? 'Coach' : 'Member'}? This changes which app experience they get.`)) return
+    setBusy(u.uid)
+    try { await dbSetUserRole(u.uid, role) }
     finally { setBusy(null) }
   }
 
@@ -191,9 +199,16 @@ export default function UsersPage() {
                       <div className="text-[11px] text-cyber-muted truncate max-w-[180px]">{u.email || u.uid.slice(0, 12)}</div>
                     </td>
                     <td className="px-4 py-3.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                        (u.role || 'coach') === 'coach' ? 'bg-cyber-accent/15 text-cyber-accent' : 'bg-emerald-400/15 text-emerald-400'
-                      }`}>{(u.role || 'coach') === 'coach' ? 'Coach' : 'Client'}</span>
+                      <select value={(u.role || 'coach') === 'client' ? 'client' : 'coach'}
+                        onChange={e => changeRole(u, e.target.value as 'coach' | 'client')}
+                        disabled={busy === u.uid}
+                        title="Change role (fixes members wrongly shown as coaches)"
+                        className={`px-2 py-1 rounded-full text-[11px] font-bold bg-cyber-bg border border-white/10 focus:outline-none focus:border-cyber-purple cursor-pointer disabled:opacity-40 ${
+                          (u.role || 'coach') === 'client' ? 'text-emerald-400' : 'text-cyber-accent'
+                        }`}>
+                        <option value="coach" className="bg-cyber-bg text-white">Coach</option>
+                        <option value="client" className="bg-cyber-bg text-white">Member</option>
+                      </select>
                     </td>
                     <td className="px-4 py-3.5">
                       <select value={u.plan || 'STARTER'} onChange={e => changePlan(u, e.target.value)} disabled={busy === u.uid}
