@@ -469,3 +469,35 @@ export async function dbSetUpgradeStatus(id: string, status: UpgradeStatus): Pro
 export async function dbDeleteUpgradeRequest(id: string): Promise<void> {
   await deleteDoc(doc(db, 'upgrade_requests', id))
 }
+
+// ─── Trainer certificate reviews ──────────────────────────────────────────────
+// Coaches upload a certificate photo in the app; on-device OCR marks it
+// verified_auto or pending. Admin gets final say here — approve writes the
+// Verified badge straight onto the live trainer profile.
+
+export type CertStatus = 'pending' | 'verified_auto' | 'verified' | 'rejected'
+
+export interface CertReview {
+  uid: string
+  name: string
+  certifications: string
+  certDocUrl: string
+  status: CertStatus
+  submittedAt: number
+  reviewedAt?: number
+}
+
+const CERT_REVIEWS = () => collection(db, 'cert_reviews')
+
+export function dbWatchCertReviews(cb: (list: CertReview[]) => void): Unsubscribe {
+  const q = query(CERT_REVIEWS(), orderBy('submittedAt', 'desc'))
+  return onSnapshot(q, snap =>
+    cb(snap.docs.map(d => ({ ...(d.data() as CertReview), uid: d.id })))
+  )
+}
+
+/** Approve/reject: updates the live trainer profile AND the review queue entry. */
+export async function dbSetCertStatus(uid: string, status: 'verified' | 'rejected'): Promise<void> {
+  await setDoc(doc(db, 'trainers', uid), { certStatus: status }, { merge: true })
+  await setDoc(doc(db, 'cert_reviews', uid), { status, reviewedAt: Date.now() }, { merge: true })
+}
