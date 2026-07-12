@@ -117,6 +117,10 @@ export interface AppControlConfig {
   announcementEnabled: boolean
   announcementText: string
   announcementType: 'info' | 'warning' | 'success'
+  // Version-count update gate — the app compares its own versionCode to this.
+  latestVersionCode: number       // newest versionCode on Play (0 = gate off)
+  updateNudgeEnabled: boolean      // dismissible "update available" banner
+  compulsoryUpdateAfter: number    // behind by MORE than this ⇒ blocking update sheet
 }
 
 const DEF_APP_CONTROL: AppControlConfig = {
@@ -128,6 +132,9 @@ const DEF_APP_CONTROL: AppControlConfig = {
   announcementEnabled: false,
   announcementText: '',
   announcementType: 'info',
+  latestVersionCode: 0,
+  updateNudgeEnabled: false,
+  compulsoryUpdateAfter: 4,
 }
 
 export async function dbGetAppControl(): Promise<AppControlConfig> {

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import {
-  Sliders, AlertTriangle, Megaphone, DownloadCloud, Save, CheckCircle, Loader2, Power,
+  Sliders, AlertTriangle, Megaphone, DownloadCloud, Save, CheckCircle, Loader2, Power, Rocket,
 } from 'lucide-react'
 import { dbWatchAppControl, dbSetAppControl, type AppControlConfig } from '@/lib/db'
 
@@ -131,6 +131,46 @@ export default function AppControlPage() {
                 <input value={cfg.updateMessage} onChange={e => upd('updateMessage', e.target.value)} className={inputCls} />
               </Field>
             </div>
+          </div>
+        </div>
+
+        {/* Update Reminder (version-count gate) */}
+        <div className={`bg-cyber-card rounded-2xl border p-6 ${cfg.latestVersionCode > 0 ? 'border-cyber-accent/30' : 'border-white/5'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${cfg.updateNudgeEnabled ? 'bg-cyber-accent/15' : 'bg-white/5'}`}>
+                <Rocket className={`w-4 h-4 ${cfg.updateNudgeEnabled ? 'text-cyber-accent' : 'text-cyber-muted'}`} />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white">Update Reminder</div>
+                <div className="text-xs text-cyber-muted">Nudge users on old builds; force an update once they fall too far behind.</div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Latest version code" hint="Your newest Play versionCode (e.g. 21 for the 1.3.6 build). Set to 0 to turn the whole reminder off. Only apps on 1.3.6+ show this popup.">
+              <input type="number" min={0} value={cfg.latestVersionCode}
+                onChange={e => upd('latestVersionCode', Math.max(0, parseInt(e.target.value || '0', 10)))}
+                placeholder="21" className={`${inputCls} font-mono`} />
+            </Field>
+            <Field label="Force update when behind by more than" hint="e.g. 4 → a user on version 15 (with latest 20 = 5 behind) must update.">
+              <input type="number" min={0} value={cfg.compulsoryUpdateAfter}
+                onChange={e => upd('compulsoryUpdateAfter', Math.max(0, parseInt(e.target.value || '0', 10)))}
+                placeholder="4" className={`${inputCls} font-mono`} />
+            </Field>
+          </div>
+          <div className="mt-4 flex items-center justify-between bg-cyber-bg rounded-xl border border-white/5 px-4 py-3">
+            <div>
+              <div className="text-sm font-semibold text-white">Soft “update available” banner</div>
+              <div className="text-xs text-cyber-muted">Dismissible nudge for users who are behind but not yet forced.</div>
+            </div>
+            <Toggle on={cfg.updateNudgeEnabled} onChange={v => upd('updateNudgeEnabled', v)} />
+          </div>
+          <div className="mt-4">
+            <Field label="Update message" hint="Shown in the banner and the compulsory update sheet (shared with Force Update).">
+              <input value={cfg.updateMessage} onChange={e => upd('updateMessage', e.target.value)}
+                placeholder="Update for the best experience and the latest features." className={inputCls} />
+            </Field>
           </div>
         </div>
 
