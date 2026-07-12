@@ -4,7 +4,8 @@ import {
   onSnapshot, type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { Plan, AppStats, AppConfig, NotifRecord } from './store'
+import type { Plan, AppStats, AppConfig, NotifRecord, FeatureMatrix } from './store'
+import { DEFAULT_FEATURE_MATRIX } from './store'
 
 // ─── Firestore collection paths ──────────────────────────────────────────────
 const CFG  = (name: string) => doc(db, 'admin_config', name)
@@ -169,6 +170,24 @@ export function dbWatchRemoteConfig(cb: (c: RemoteConfigValues) => void): Unsubs
   )
 }
 
+// ─── Feature Matrix (per-tier locked/unlocked) ────────────────────────────────
+// One doc, admin_config/feature_matrix: { featureKey: { TIER: boolean } }.
+// Coach tiers STARTER/PRO/BUSINESS · member tiers FREE/PREMIUM. The Android app
+// reads this live and enforces it; missing cells fall back to DEFAULT_FEATURE_MATRIX.
+
+export async function dbGetFeatureMatrix(): Promise<FeatureMatrix> {
+  const snap = await getDoc(CFG('feature_matrix'))
+  return snap.exists() ? { ...DEFAULT_FEATURE_MATRIX, ...(snap.data() as FeatureMatrix) } : DEFAULT_FEATURE_MATRIX
+}
+export async function dbSetFeatureMatrix(matrix: FeatureMatrix) {
+  await setDoc(CFG('feature_matrix'), matrix)
+}
+export function dbWatchFeatureMatrix(cb: (m: FeatureMatrix) => void): Unsubscribe {
+  return onSnapshot(CFG('feature_matrix'), snap =>
+    cb(snap.exists() ? { ...DEFAULT_FEATURE_MATRIX, ...(snap.data() as FeatureMatrix) } : DEFAULT_FEATURE_MATRIX)
+  )
+}
+
 // ─── User Records ─────────────────────────────────────────────────────────────
 
 export interface UserRecord {
@@ -184,6 +203,7 @@ export interface UserRecord {
   appVersionUpdatedAt?: number
   versionHistory?: string[]  // every version this user has ever run
   role: 'coach' | 'client'   // 'coach' if not set (legacy)
+  memberPremium?: boolean    // client-side premium tier (FREE when false/absent)
   // Aggregate stats written by the Android app on every data change
   clientCount?: number
   totalMrr?: number
@@ -204,6 +224,11 @@ export async function dbSetUserSuspended(uid: string, suspended: boolean) {
 }
 export async function dbSetUserPlan(uid: string, plan: string) {
   await setDoc(doc(db, 'user_records', uid), { plan }, { merge: true })
+}
+// Member subscription (client-side): FREE ↔ PREMIUM. The app reads memberPremium
+// live from user_records and unlocks the AI features gated to Premium.
+export async function dbSetMemberPremium(uid: string, premium: boolean) {
+  await setDoc(doc(db, 'user_records', uid), { memberPremium: premium }, { merge: true })
 }
 // Manual role correction — older app builds never wrote `role` for members who
 // signed in via Google on the login screen, so they surfaced here as coaches.

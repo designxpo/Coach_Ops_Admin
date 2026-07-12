@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Bell, ToggleLeft, CreditCard,
-  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils, Rocket, Bug, ArrowUpCircle, BadgeCheck,
+  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils, Rocket, Bug, ArrowUpCircle, BadgeCheck, Grid3x3,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
@@ -20,6 +20,7 @@ const NAV = [
   { href: '/dashboard/nutrition',     icon: Utensils,          label: 'Nutrition'       },
   { href: '/dashboard/notifications', icon: Bell,              label: 'Notifications'   },
   { href: '/dashboard/features',      icon: ToggleLeft,        label: 'Feature Flags'   },
+  { href: '/dashboard/feature-matrix', icon: Grid3x3,          label: 'Feature Matrix'  },
   { href: '/dashboard/plans',         icon: CreditCard,        label: 'Plans & Pricing' },
   { href: '/dashboard/remote-config', icon: SlidersHorizontal, label: 'Remote Config'   },
   { href: '/dashboard/settings',      icon: Settings,          label: 'Settings'        },

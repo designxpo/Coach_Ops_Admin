@@ -5,7 +5,7 @@ import {
   ShieldAlert, ShieldCheck, Ban, Smartphone,
 } from 'lucide-react'
 import {
-  dbWatchUsers, dbSetUserSuspended, dbSetUserPlan, dbSetUserRole, type UserRecord,
+  dbWatchUsers, dbSetUserSuspended, dbSetUserPlan, dbSetUserRole, dbSetMemberPremium, type UserRecord,
 } from '@/lib/db'
 
 const PLAN_OPTIONS = ['STARTER', 'PRO', 'BUSINESS']
@@ -79,6 +79,12 @@ export default function UsersPage() {
   async function changePlan(u: UserRecord, plan: string) {
     setBusy(u.uid)
     try { await dbSetUserPlan(u.uid, plan) }
+    finally { setBusy(null) }
+  }
+
+  async function changeMemberTier(u: UserRecord, premium: boolean) {
+    setBusy(u.uid)
+    try { await dbSetMemberPremium(u.uid, premium) }
     finally { setBusy(null) }
   }
 
@@ -211,10 +217,21 @@ export default function UsersPage() {
                       </select>
                     </td>
                     <td className="px-4 py-3.5">
-                      <select value={u.plan || 'STARTER'} onChange={e => changePlan(u, e.target.value)} disabled={busy === u.uid}
-                        className={`px-2 py-1 rounded-lg text-[11px] font-bold bg-cyber-bg border border-white/10 focus:outline-none focus:border-cyber-purple cursor-pointer disabled:opacity-40 ${PLAN_CLS[u.plan || 'STARTER'] ?? PLAN_CLS.STARTER}`}>
-                        {PLAN_OPTIONS.map(p => <option key={p} value={p} className="bg-cyber-bg text-white">{p}</option>)}
-                      </select>
+                      {u.role === 'client' ? (
+                        <select value={u.memberPremium ? 'PREMIUM' : 'FREE'} onChange={e => changeMemberTier(u, e.target.value === 'PREMIUM')} disabled={busy === u.uid}
+                          title="Member subscription — Premium unlocks the AI features"
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold bg-cyber-bg border border-white/10 focus:outline-none focus:border-cyber-purple cursor-pointer disabled:opacity-40 ${
+                            u.memberPremium ? 'bg-cyber-accent/15 text-cyber-accent' : 'text-cyber-muted'
+                          }`}>
+                          <option value="FREE" className="bg-cyber-bg text-white">FREE</option>
+                          <option value="PREMIUM" className="bg-cyber-bg text-white">PREMIUM</option>
+                        </select>
+                      ) : (
+                        <select value={u.plan || 'STARTER'} onChange={e => changePlan(u, e.target.value)} disabled={busy === u.uid}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold bg-cyber-bg border border-white/10 focus:outline-none focus:border-cyber-purple cursor-pointer disabled:opacity-40 ${PLAN_CLS[u.plan || 'STARTER'] ?? PLAN_CLS.STARTER}`}>
+                          {PLAN_OPTIONS.map(p => <option key={p} value={p} className="bg-cyber-bg text-white">{p}</option>)}
+                        </select>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-white font-semibold">{u.clientCount ?? 0}</td>
                     <td className="px-4 py-3.5 text-white font-semibold">{u.sessionCount ?? 0}</td>

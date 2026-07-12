@@ -21,6 +21,43 @@ export const FEATURES: Feature[] = [
   { key: 'force_update',     label: 'Force Update',       description: 'Prompt users to update',             defaultEnabled: false, dangerous: true },
 ]
 
+// ─── Subscription tiers & per-tier feature matrix ─────────────────────────────
+// Coaches sit on STARTER/PRO/BUSINESS; members are FREE or PREMIUM. The matrix
+// says which tier unlocks which feature. It writes to admin_config/feature_matrix
+// and the app reads + enforces it live — defaults here MUST mirror the app's
+// FeatureGate.DEFAULTS so a missing/partial doc changes nothing.
+
+export type MemberTier = 'FREE' | 'PREMIUM'
+export const COACH_TIERS: Plan[] = ['STARTER', 'PRO', 'BUSINESS']
+export const MEMBER_TIERS: MemberTier[] = ['FREE', 'PREMIUM']
+
+export interface MatrixFeature {
+  key: string
+  label: string
+  description: string
+  audience: 'coach' | 'member'
+}
+
+export const MATRIX_FEATURES: MatrixFeature[] = [
+  { key: 'revenue_analytics',    label: 'Revenue Analytics',    description: 'MRR trend chart & 30-day forecast',            audience: 'coach' },
+  { key: 'gym_suite',            label: 'Gym Suite',            description: 'Members, plans, billing & attendance',         audience: 'coach' },
+  { key: 'featured_marketplace', label: 'Featured in Discover', description: 'Featured badge + surfaced first in marketplace', audience: 'coach' },
+  { key: 'broadcast',            label: 'Broadcast Messaging',  description: 'WhatsApp bulk messaging to all clients',        audience: 'coach' },
+  { key: 'ai_nutrition_coach',   label: 'AI Nutrition Coach',   description: 'Chat-based AI nutrition guidance',              audience: 'member' },
+  { key: 'ai_meal_planner',      label: 'AI Meal Planner',      description: 'AI meal plans + auto grocery lists',            audience: 'member' },
+]
+
+export type FeatureMatrix = Record<string, Record<string, boolean>>
+
+export const DEFAULT_FEATURE_MATRIX: FeatureMatrix = {
+  revenue_analytics:    { STARTER: false, PRO: true,  BUSINESS: true },
+  gym_suite:            { STARTER: false, PRO: false, BUSINESS: true },
+  featured_marketplace: { STARTER: false, PRO: true,  BUSINESS: true },
+  broadcast:            { STARTER: true,  PRO: true,  BUSINESS: true },
+  ai_nutrition_coach:   { FREE: false, PREMIUM: true },
+  ai_meal_planner:      { FREE: false, PREMIUM: true },
+}
+
 const DEFAULT_FLAGS: Record<string, boolean> = {
   program_timeline: true,
   revenue_chart: true,
