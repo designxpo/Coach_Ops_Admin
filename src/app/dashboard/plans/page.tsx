@@ -16,14 +16,19 @@ const PLAN_META: { key: Plan; name: string; tagline: string; accent: string; rin
 export default function PlansPage() {
   const [prices,      setPrices]      = useState<Record<Plan, number>>({ STARTER: 0, PRO: 999, BUSINESS: 2499 })
   const [currentPlan, setCurrentPlan] = useState<Plan>('STARTER')
+  const [memberMonthly, setMemberMonthly] = useState(199)
+  const [memberYearly,  setMemberYearly]  = useState(999)
   const [loading,     setLoading]     = useState(true)
   const [saving,      setSaving]      = useState(false)
   const [saved,       setSaved]       = useState(false)
   const [dirty,       setDirty]       = useState(false)
 
   useEffect(() => {
-    const unsub = dbWatchPlans(({ prices: p, currentPlan: cp }) => {
-      if (!dirty) { setPrices(p); setCurrentPlan(cp) }
+    const unsub = dbWatchPlans(p => {
+      if (!dirty) {
+        setPrices(p.prices); setCurrentPlan(p.currentPlan)
+        setMemberMonthly(p.memberPremiumMonthly); setMemberYearly(p.memberPremiumYearly)
+      }
       setLoading(false)
     })
     return unsub
@@ -35,10 +40,16 @@ export default function PlansPage() {
     setDirty(true); setSaved(false)
   }
 
+  function setMember(kind: 'monthly' | 'yearly', value: number) {
+    const v = Math.max(0, value)
+    if (kind === 'monthly') setMemberMonthly(v); else setMemberYearly(v)
+    setDirty(true); setSaved(false)
+  }
+
   async function save() {
     setSaving(true)
     try {
-      await dbSetPlans({ currentPlan, prices })
+      await dbSetPlans({ currentPlan, prices, memberPremiumMonthly: memberMonthly, memberPremiumYearly: memberYearly })
       setDirty(false); setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } finally { setSaving(false) }
@@ -97,8 +108,38 @@ export default function PlansPage() {
         ))}
       </div>
 
+      {/* Member Premium pricing — client-side subscription */}
+      <div className="mt-6 bg-cyber-card rounded-2xl border border-cyber-accent/30 p-6">
+        <div className="mb-4">
+          <div className="text-lg font-black text-cyber-accent">Member Premium</div>
+          <div className="text-xs text-cyber-muted">Client-side subscription — unlocks the AI Nutrition Coach & Meal Planner. Shown live in the app paywall.</div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 max-w-md">
+          <div>
+            <label className="text-xs text-cyber-muted block mb-1.5">Monthly price</label>
+            <div className="flex items-center gap-1">
+              <span className="text-lg font-black text-cyber-muted">₹</span>
+              <input type="number" min={0} value={memberMonthly}
+                onChange={e => setMember('monthly', parseInt(e.target.value || '0', 10))}
+                className="w-24 bg-cyber-bg border border-white/10 rounded-xl px-3 py-2 text-2xl font-black text-white focus:outline-none focus:border-cyber-accent transition-colors" />
+              <span className="text-xs text-cyber-muted self-end pb-2">/mo</span>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-cyber-muted block mb-1.5">Yearly price</label>
+            <div className="flex items-center gap-1">
+              <span className="text-lg font-black text-cyber-muted">₹</span>
+              <input type="number" min={0} value={memberYearly}
+                onChange={e => setMember('yearly', parseInt(e.target.value || '0', 10))}
+                className="w-24 bg-cyber-bg border border-white/10 rounded-xl px-3 py-2 text-2xl font-black text-white focus:outline-none focus:border-cyber-accent transition-colors" />
+              <span className="text-xs text-cyber-muted self-end pb-2">/yr</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-4 text-xs text-cyber-muted bg-white/3 border border-white/5 rounded-xl px-4 py-3">
-        Writes to <span className="font-mono">admin_config/plans</span>. Client caps per tier are set in <span className="text-white font-semibold">Remote Config</span>; these prices drive your revenue figures on the Overview.
+        Writes to <span className="font-mono">admin_config/plans</span>. Client caps per tier are set in <span className="text-white font-semibold">Remote Config</span>; feature locks in <span className="text-white font-semibold">Feature Matrix</span>. These prices drive your revenue figures on the Overview and the in-app Premium paywall.
       </div>
     </div>
   )

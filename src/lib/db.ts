@@ -44,16 +44,28 @@ export function dbWatchFlags(cb: (f: Record<string, boolean>) => void): Unsubscr
 }
 
 // ─── Plans & Prices ───────────────────────────────────────────────────────────
-export async function dbGetPlans(): Promise<{ currentPlan: Plan; prices: Record<Plan, number> }> {
-  const snap = await getDoc(CFG('plans'))
-  return snap.exists() ? (snap.data() as any) : { currentPlan: 'STARTER', prices: DEF_PRICES }
+// Coach tier prices + member Premium price. The app reads memberPremiumMonthly/
+// Yearly live in the paywall, so changing them here updates the in-app price.
+export interface PlansConfig {
+  currentPlan: Plan
+  prices: Record<Plan, number>
+  memberPremiumMonthly: number
+  memberPremiumYearly: number
 }
-export async function dbSetPlans(data: { currentPlan: Plan; prices: Record<Plan, number> }) {
+const DEF_PLANS: PlansConfig = {
+  currentPlan: 'STARTER', prices: DEF_PRICES,
+  memberPremiumMonthly: 199, memberPremiumYearly: 999,
+}
+export async function dbGetPlans(): Promise<PlansConfig> {
+  const snap = await getDoc(CFG('plans'))
+  return snap.exists() ? { ...DEF_PLANS, ...(snap.data() as Partial<PlansConfig>) } : DEF_PLANS
+}
+export async function dbSetPlans(data: PlansConfig) {
   await setDoc(CFG('plans'), data)
 }
-export function dbWatchPlans(cb: (d: { currentPlan: Plan; prices: Record<Plan, number> }) => void): Unsubscribe {
+export function dbWatchPlans(cb: (d: PlansConfig) => void): Unsubscribe {
   return onSnapshot(CFG('plans'), snap =>
-    cb(snap.exists() ? (snap.data() as any) : { currentPlan: 'STARTER', prices: DEF_PRICES })
+    cb(snap.exists() ? { ...DEF_PLANS, ...(snap.data() as Partial<PlansConfig>) } : DEF_PLANS)
   )
 }
 
