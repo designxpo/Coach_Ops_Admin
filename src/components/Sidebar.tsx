@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Bell, ToggleLeft, CreditCard,
-  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils, Rocket, Bug, ArrowUpCircle, BadgeCheck, Grid3x3,
+  Settings, LogOut, Sliders, Users, SlidersHorizontal, Dumbbell, Utensils, Rocket, Bug, ArrowUpCircle, BadgeCheck, Grid3x3, Database,
 } from 'lucide-react'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
@@ -17,6 +17,7 @@ const NAV = [
   { href: '/dashboard/early-access', icon: Rocket,            label: 'Early Access'    },
   { href: '/dashboard/issues',        icon: Bug,               label: 'Issue Reports'   },
   { href: '/dashboard/exercises',     icon: Dumbbell,          label: 'Exercises'       },
+  { href: '/dashboard/exercise-import', icon: Database,        label: 'Exercise Import' },
   { href: '/dashboard/nutrition',     icon: Utensils,          label: 'Nutrition'       },
   { href: '/dashboard/notifications', icon: Bell,              label: 'Notifications'   },
   { href: '/dashboard/features',      icon: ToggleLeft,        label: 'Feature Flags'   },

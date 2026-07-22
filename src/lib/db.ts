@@ -1,7 +1,7 @@
 import {
   doc, getDoc, setDoc, collection,
   query, orderBy, limit, getDocs, addDoc, deleteDoc,
-  onSnapshot, type Unsubscribe,
+  onSnapshot, writeBatch, type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { Plan, AppStats, AppConfig, NotifRecord, FeatureMatrix } from './store'
@@ -331,6 +331,29 @@ export async function dbDeleteExercise(id: string) {
 
 export async function dbToggleExercisePublished(id: string, published: boolean) {
   await setDoc(doc(db, 'exercises', id), { isPublished: published, updatedAt: Date.now() }, { merge: true })
+}
+
+// Bulk-import a pre-transformed exercise catalog (e.g. the Gym visual dataset) into
+// the `exercises` collection. Writes in batches of 400 (Firestore's 500-op limit),
+// merging so a re-run just updates. Each item's `id` becomes the document id.
+export async function dbBulkImportExercises(
+  list: Array<Record<string, unknown> & { id: string }>,
+  onProgress?: (done: number, total: number) => void,
+): Promise<number> {
+  const now = Date.now()
+  const CHUNK = 400
+  let done = 0
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const batch = writeBatch(db)
+    for (const e of list.slice(i, i + CHUNK)) {
+      const { id, ...rest } = e
+      batch.set(doc(db, 'exercises', id), { ...rest, createdAt: now, updatedAt: now }, { merge: true })
+    }
+    await batch.commit()
+    done = Math.min(i + CHUNK, list.length)
+    onProgress?.(done, list.length)
+  }
+  return done
 }
 
 export function dbWatchExercises(cb: (list: AdminExercise[]) => void): Unsubscribe {
