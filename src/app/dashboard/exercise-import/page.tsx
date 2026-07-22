@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Database, Download, Loader2, CheckCircle, AlertTriangle, Dumbbell } from 'lucide-react'
+import { Database, Download, Loader2, CheckCircle, Dumbbell } from 'lucide-react'
 import { dbBulkImportExercises } from '@/lib/db'
 
-interface CatalogItem { id: string; name: string; equipment: string; category: string; gifUrl?: string; [k: string]: unknown }
+interface CatalogItem { id: string; name: string; equipment: string; category: string; imageUrl?: string; gifUrl?: string; [k: string]: unknown }
 
 export default function ExerciseImportPage() {
   const [catalog, setCatalog] = useState<CatalogItem[] | null>(null)
@@ -35,7 +35,7 @@ export default function ExerciseImportPage() {
   }
 
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
-  const withGif = catalog?.filter(e => e.gifUrl).length ?? 0
+  const withMedia = catalog?.filter(e => e.imageUrl).length ?? 0
 
   return (
     <div className="p-8 max-w-3xl">
@@ -47,14 +47,14 @@ export default function ExerciseImportPage() {
         <p className="text-cyber-muted text-sm mt-1">One-click bulk import of the 1,324-exercise catalog into Firestore.</p>
       </div>
 
-      {/* License warning — the media is © Gym visual */}
-      <div className="mb-5 flex items-start gap-2 text-xs bg-amber-400/10 border border-amber-400/30 rounded-xl px-4 py-3 text-amber-200">
-        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-400" />
+      {/* All content here is free to use — no license required */}
+      <div className="mb-5 flex items-start gap-2 text-xs bg-emerald-400/10 border border-emerald-400/30 rounded-xl px-4 py-3 text-emerald-200">
+        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-400" />
         <span>
-          The exercise <b>data</b> (names, muscles, instructions) is MIT-licensed and safe to import.
-          The <b>animation GIFs &amp; thumbnails are © Gym visual</b> — the catalog references them by URL only.
-          They will not appear until you host the 180×180 media on Supabase <b>under your own Gym visual license</b>,
-          and the required credit “© Gym visual — https://gymvisual.com/” is shown in-app.
+          Safe to import — everything here is free to use commercially. Exercise <b>data</b>
+          (names, muscles, instructions) is MIT-licensed, and the <b>images are from
+          free-exercise-db (public domain / Unlicense)</b>, no attribution required.
+          Exercises without a matched image show a muscle-group icon instead.
         </span>
       </div>
 
@@ -70,7 +70,7 @@ export default function ExerciseImportPage() {
             <div className="grid grid-cols-3 gap-4 mb-5">
               {[
                 { label: 'Exercises', value: catalog.length, icon: Dumbbell },
-                { label: 'With media', value: withGif, icon: Download },
+                { label: 'With image', value: withMedia, icon: Download },
                 { label: 'Status', value: finished ? 'Imported' : busy ? `${pct}%` : 'Ready', icon: CheckCircle },
               ].map(({ label, value, icon: Icon }) => (
                 <div key={label} className="bg-cyber-bg rounded-xl border border-white/5 px-4 py-3">
