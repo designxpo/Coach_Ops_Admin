@@ -405,8 +405,12 @@ export interface AdminIndianFood {
 const INDIAN_FOODS = () => collection(db, 'indian_foods')
 
 export function dbWatchIndianFoods(cb: (list: AdminIndianFood[]) => void): Unsubscribe {
-  return onSnapshot(INDIAN_FOODS(), snap =>
-    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminIndianFood)))
+  return onSnapshot(
+    INDIAN_FOODS(),
+    snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminIndianFood))),
+    // Don't hang on "Loading…" if the listener errors (e.g. missing Firestore
+    // rule for indian_foods) — surface an empty list so the page renders.
+    err => { console.error('indian_foods listener error:', err); cb([]) },
   )
 }
 
