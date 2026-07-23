@@ -356,6 +356,26 @@ export async function dbBulkImportExercises(
   return done
 }
 
+// Delete previously bulk-imported exercises (ids prefixed `gv-` or `fedb-`) so a
+// fresh import fully replaces the old catalog instead of stacking on top of it.
+// Admin-created exercises (random ids) are left untouched.
+export async function dbClearImportedExercises(
+  onProgress?: (done: number, total: number) => void,
+): Promise<number> {
+  const snap = await getDocs(EXERCISES())
+  const toDelete = snap.docs.filter(d => /^(gv-|fedb-)/.test(d.id))
+  const CHUNK = 400
+  let done = 0
+  for (let i = 0; i < toDelete.length; i += CHUNK) {
+    const batch = writeBatch(db)
+    for (const d of toDelete.slice(i, i + CHUNK)) batch.delete(d.ref)
+    await batch.commit()
+    done = Math.min(i + CHUNK, toDelete.length)
+    onProgress?.(done, toDelete.length)
+  }
+  return done
+}
+
 export function dbWatchExercises(cb: (list: AdminExercise[]) => void): Unsubscribe {
   const q = query(EXERCISES(), orderBy('category'), orderBy('name'))
   return onSnapshot(q, snap =>
