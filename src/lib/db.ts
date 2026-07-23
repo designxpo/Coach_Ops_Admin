@@ -383,6 +383,75 @@ export function dbWatchExercises(cb: (list: AdminExercise[]) => void): Unsubscri
   )
 }
 
+// ─── Indian Food Library (admin CRUD) ─────────────────────────────────────────
+
+export interface AdminIndianFood {
+  id: string
+  name: string
+  quantity: string
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  isVegetarian: boolean
+  category: string          // BREAKFAST | MAINS | DAL_CURRY | BREADS_RICE | SNACKS | SALADS_SIDES | DRINKS | NONVEG | SWEETS
+  region: string            // '' (pan-India) | NORTH | SOUTH | WEST | EAST
+  benefits: string
+  isPublished: boolean
+  createdAt?: number
+  updatedAt?: number
+}
+
+const INDIAN_FOODS = () => collection(db, 'indian_foods')
+
+export function dbWatchIndianFoods(cb: (list: AdminIndianFood[]) => void): Unsubscribe {
+  return onSnapshot(INDIAN_FOODS(), snap =>
+    cb(snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminIndianFood)))
+  )
+}
+
+export async function dbSaveIndianFood(
+  food: Omit<AdminIndianFood, 'id' | 'createdAt' | 'updatedAt'>, id?: string,
+): Promise<string> {
+  const now = Date.now()
+  if (id) {
+    await setDoc(doc(db, 'indian_foods', id), { ...food, updatedAt: now }, { merge: true })
+    return id
+  }
+  const ref = await addDoc(INDIAN_FOODS(), { ...food, createdAt: now, updatedAt: now })
+  return ref.id
+}
+
+export async function dbDeleteIndianFood(id: string) {
+  await deleteDoc(doc(db, 'indian_foods', id))
+}
+
+export async function dbToggleIndianFoodPublished(id: string, published: boolean) {
+  await setDoc(doc(db, 'indian_foods', id), { isPublished: published, updatedAt: Date.now() }, { merge: true })
+}
+
+// Seed / re-seed the built-in dishes (merge by id — safe to re-run; edits are kept
+// only where you didn't change a seeded field). Used by the "Seed library" button.
+export async function dbBulkImportIndianFoods(
+  list: Array<Record<string, unknown> & { id: string }>,
+  onProgress?: (done: number, total: number) => void,
+): Promise<number> {
+  const now = Date.now()
+  const CHUNK = 400
+  let done = 0
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const batch = writeBatch(db)
+    for (const e of list.slice(i, i + CHUNK)) {
+      const { id, ...rest } = e
+      batch.set(doc(db, 'indian_foods', id), { ...rest, createdAt: now, updatedAt: now }, { merge: true })
+    }
+    await batch.commit()
+    done = Math.min(i + CHUNK, list.length)
+    onProgress?.(done, list.length)
+  }
+  return done
+}
+
 // ─── Nutrition Plans (admin CRUD) ─────────────────────────────────────────────
 
 export interface AdminFoodItem {
